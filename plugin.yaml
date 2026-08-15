@@ -1,0 +1,20 @@
+schema: mcpg.dev/plugin/v1
+id: dev.mcpg.credential.aws-sts
+name: AWS STS AssumeRole Credentials
+license: BUSL-1.1
+description: |
+  A credential_issuer that issues short-lived AWS credentials per
+  request via STS AssumeRole. The gateway runs as a base IAM principal
+  (IRSA / instance role / operator static keys) and assumes a target
+  role chosen by mapping the caller's identity (static / subject_id /
+  from_role / template). The caller's subject is stamped into the
+  RoleSessionName for CloudTrail attribution; identity-derived role
+  ARNs require Verified trust, pass an ARN shape check, and an optional
+  per-target allowlist. Returns access_key_id + secret_access_key +
+  session_token with a TTL derived from the STS session expiry. STS
+  sessions auto-expire (no revocation API).
+class: credential_issuer
+runtime: native-cdylib-v1
+protocol_version: "1.0"
+required_capabilities:
+  - network_outbound

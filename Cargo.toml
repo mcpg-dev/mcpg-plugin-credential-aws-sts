@@ -1,0 +1,62 @@
+[package]
+name = "mcpg-plugin-credential-aws-sts"
+version = "0.1.0-alpha.15"
+license = "BUSL-1.1"
+edition = "2024"
+description = "AWS STS AssumeRole credential_issuer plugin for MCPG — per-caller temporary AWS credentials"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+mcpg-plugin-protocol = { git = "https://github.com/mcpg-dev/mcpg-plugin-protocol", tag = "v0.1.0-beta.13", version = "=0.1.0-beta.13" }
+mcpg-plugin-sdk = { git = "https://github.com/mcpg-dev/mcpg-plugin-sdk", tag = "v0.1.0-beta.13", version = "=0.1.0-beta.13" }
+async-trait = "0.1"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+metrics = "0.24"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "2.0"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync"] }
+tracing = "0.1"
+
+# Pin the MODERN AWS HTTPS client (aws-lc-rs / rustls 0.23) and keep the
+# tree off the EOL rustls 0.21 stack. The trap: the AWS SDK crates'
+# `rustls` feature maps to the LEGACY `tls-rustls` → hyper-0.14 + rustls
+# 0.21 path. The modern path is `default-https-client` (→ rustls-aws-lc).
+# So we disable defaults and select `default-https-client` explicitly,
+# NOT `rustls`.
+aws-config = { version = "1", default-features = false, features = [
+    "behavior-version-latest",
+    "default-https-client",
+    "rt-tokio",
+    "credentials-process",
+    "sso",
+] }
+aws-credential-types = "1"
+aws-sdk-sts = { version = "1", default-features = false, features = [
+    "behavior-version-latest",
+    "default-https-client",
+] }
+
+[dev-dependencies]
+# Docker-backed STS integration suite (LocalStack). Stays a dev-dep so
+# the cdylib doesn't bundle docker glue at runtime. Gated behind the
+# `integration-tests` feature so the push-lane `--lib` run stays cheap.
+testcontainers = { version = "0.27", features = ["blocking"] }
+testcontainers-modules = { version = "0.15", features = ["localstack", "blocking"] }
+
+
+[features]
+default = ["cdylib-export"]
+cdylib-export = []
+# Declared so the SDK's `declare_credential_issuer_plugin!`
+# `build_static` accessor (gated `#[cfg(feature = "static-firstparty")]`)
+# does not trigger `unexpected_cfgs` in consumer compilation. Empty:
+# this plugin is consumed as a cdylib, not via the static-firstparty
+# fast path.
+static-firstparty = []
+# Gates the LocalStack-backed integration suite so plain `cargo test
+# --lib` stays cheap. Run with `cargo test -p
+# mcpg-plugin-credential-aws-sts --features integration-tests`.
+integration-tests = []
