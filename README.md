@@ -111,7 +111,7 @@ round-trip:
 cargo test -p mcpg-plugin-credential-aws-sts --features integration-tests --test integration
 ```
 
-(needs Docker; runs in the `--config=integration` CI lane.)
+(needs Docker; the suite starts `localstack/localstack:4.14.0`.)
 
 ## Notes
 
